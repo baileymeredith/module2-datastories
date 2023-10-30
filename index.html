@@ -1,0 +1,403 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <title>Women in Tech Statistics</title>
+    <script src="https://d3js.org/d3.v6.js"></script>
+</head>
+<body>
+    <div id="chart1" class="text-box"></div>
+    <script>
+        /* sources for the following: 
+        - d3 tutorial from class 
+        - https://observablehq.com/@d3/bar-chart-transitions/2 
+        - https://d3-graph-gallery.com/graph/barplot_stacked_basicWide.html 
+        - https://observablehq.com/@d3/diverging-bar-chart/2?intent=fork
+        - https://stackoverflow.com/questions/39964570/how-to-filter-data-with-d3-js
+        */
+        const margin = { top: 50, right: 50, bottom: 90, left: 50 };
+        const width = 800 - margin.left - margin.right;
+        const height = 600 - margin.top - margin.bottom;
+      
+        // Append the SVG object to the body of the page
+        const svg = d3.select("#chart1")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
+      
+        // Read the data
+        d3.csv("Employee Diversity in Tech4.csv", function (d) {
+          return {
+            company: d["Company"],
+            female: +d['Female'],
+            male: +d['Male'],
+            date: d["Date"],
+            type: d["Type"]
+          };
+        }).then(function (data) {
+        
+          data2 = data;
+          data = data.filter(d => d.date == "May 2018");
+          const usPopulation = data.find(d => d.company == "U.S. Population").female;
+          data = data.filter(d => d.type == "Tech");
+          data = data.filter(d => d.company != "Fortune 500 CEOs");
+          data = data.sort((a, b) => b.female - a.female);
+        
+          const x = d3.scaleBand()
+            .domain(data.map(d => d.company))
+            .range([0, width])
+            .padding(0.1);
+      
+          const xAxis = d3.axisBottom(x).tickSizeOuter(0);
+      
+          const y = d3.scaleLinear()
+            .domain([0, 100])
+            .nice()
+            .range([height, 0]);
+        
+          const title = svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", 20)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "16px")
+            .text("Gender Diversity at Tech Companies (2018)")
+
+          const gx = svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${height})`)
+            .call(xAxis)
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("transform", "rotate(-45)");
+
+          svg.append("text")
+            .attr("class", "x-label")
+            .attr("text-anchor", "middle")
+            .attr("x", width / 2)
+            .attr("y", height + margin.top)
+            .text("Company");
+
+          svg.append("text")
+            .attr("class", "y-label")
+            .attr("text-anchor", "middle")
+            .attr("transform", `translate(${-margin.left / 1.5}, ${height / 2}) rotate(-90)`)
+            .text("Percentage")
+      
+          const gy = svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(y));
+
+          var tooltip = d3.select("#chart1")
+            .append("div")
+          .style("position", "absolute")
+          .style("visibility", "hidden")
+          .style("background-color", "#D0A6FF")
+          .style("font-size", "20")
+      
+          // Create a bar for each company.
+          const bars = svg.selectAll(".bar")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d.company))
+            .attr("y", d => y(d.female))
+            .attr("width", x.bandwidth())
+            .attr("height", d => height - y(d.female))
+            .attr("fill", d => {
+                if (d.company == "U.S. Population") {
+                    return "#E826B6"
+                } else {
+                    return "#F895DE"
+                }
+            })
+            .on("mouseover", function(e, d) { return tooltip.style("visibility", "visible")
+                                                            .html(d.company + " = " + d.female + "% Women");})
+            .on("mousemove", function() { return tooltip.style("top", d3.select(this)
+                                                                    .attr("y")+"px")
+                                                                    .style("left", d3.select(this)
+                                                                                .attr("x")+"px")})
+            .on("mouseout", function() { return tooltip.style("visibility", "hidden");})
+
+
+            svg.append("line")
+            .attr("class", "female-us-population-line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", y(usPopulation))
+            .attr("y2", y(usPopulation))
+            .style("stroke", "purple")
+            .style("stroke-width", 2)
+
+            svg.append("text")
+            .attr("class", "line-title")
+            .attr("x", width / 2)
+            .attr("y", y(usPopulation) - 10)
+            .attr("text-anchor", "middle")
+            .style("fill", "purple")
+            .text("U.S. Population Percentage of Women");
+
+            d3.selectAll(".female-us-population-line").raise();
+        });
+      </script>
+
+    <div style="text-align: center;">
+        <h1>Women in Tech Statistics 2023</h1>
+        <h2>Uncovering Trends and Unseen Data by WomenTech Network</h2>
+        <div class="text-box">
+            <h3>Bailey DeSouza</h2>
+            <h4>This website is a remix of the following article: <a href="https://www.womentech.net/en-us/women-technology-statistics">https://www.womentech.net/en-us/women-technology-statistics</a> published by womentech network.
+            <br> All text is taken verbatum from this article. The three visualizations I've added to this remix are all highlighted in pink boxes.
+            <br> To supplement this article, I used this dataset: <a href="https://data.world/makeovermonday/2018w46">https://data.world/makeovermonday/2018w46</a>
+            . The dataset was used for the visualizations that I created.
+            </h4>
+        </div>
+        <h4>A Look at the Latest Statistics on Women in the Tech Industries</h4>
+        <h4>The Tech industry has long been a male-dominated world but as we entered a new decade it is time to look at the position of women in tech.</h4>
+        <h4>Where are we now and where are we going?</h4>
+    </div>
+    <div style="text-align: center;">
+        <h2>Women in Tech and STEM Workforce</h2>
+        <p>According to a report by The World Bank, women make up less than a third of the world’s workforce in technology-related fields.</p>
+        <p>Women hold 28% of all jobs in computer and mathematical occupations, and 15.9% of jobs in engineering and architecture occupations.</p>
+        <p>The United States science, technology, engineering, and mathematics (STEM) labor force represents only 23% of the total U.S. labor force.</p>
+        <p>In the European Union, women make up only 19.1% of the ICT (information and communication technology) sector.</p>
+        <p>In 2022, the percentage of women employees at Google has slightly risen to 33.9%.</p>
+        <img src="assets/womeninstem.png" alt="Women in STEM Workforce">
+    </div>
+    <div style="text-align: center;">
+        <h2>What About the Global Women’s Workforce?</h2>
+        <p>Recent studies have revealed that only 47%, less than half of working-age women are participating in the global workforce, and in some countries this figure is even lower. 
+            This means that for every two men employed, there is only one woman. In addition to this, women earn less money than their male counterparts and are more likely to experience 
+            gender-based discrimination.</p>
+        <p>The majority of countries have seen an increase in female labor participation over the last decade, with emerging economies leading the way. However, progress has been slower 
+            in advanced economies due to a combination of varying economic policies and fewer incentives for women to return to work.</p>
+        <p>It is clear that increased efforts must be made in order to further empower women through improving access to education and creating meaningful employment opportunities. This 
+            will go a long way towards ensuring that every woman has the ability to realize her potential and contribute positively to society.</p>
+        <img src="assets/globalworkforce.png" alt="Global Workforce">
+    </div>
+    <div style="text-align: center;">
+        <h2>Gaps in STEM Education Graduate Stats</h2>
+        <p>The gender gap in STEM fields is particularly concerning when it comes to the specific academic disciplines. Women account for a mere 16% of those who earned a Bachelor's degree 
+            in computer and information sciences, 21% of Engineering and Engineering Technology graduates, 27% with an Economics background, and 38%, Physical Sciences degrees recipients respectively..</p>
+        <p>In spite of having the same opportunities, women's enrollment in STEM courses has been dropping and only accounts for 18% of new computer science degrees. This percentage is even lower 
+            among Black or Hispanic students, as they account for a measly 6.3%. Consequently, this limits their chances to join the tech industry workforce.</p>
+        <p>According to the U.S. Bureau of Labor Statistics, STEM occupations have seen a remarkable 79% rise in the past three decades and are projected to further increase by 11% from 2020-2030. </p>
+        <img src="assets/bachelors.png" alt="Women with Bachelor's degree in Computer and Information Sciences">
+    </div>
+    <div style="text-align: center;">
+        <h2>Hiring Trends & Retention</h2>
+        <p>Survey results have revealed that 65% of tech recruiters believe bias is an ongoing problem in technical recruitment. Talent retention remains a very serious issue for companies, whereas above 
+            38% of interviewed companies want to invest more in it.</p>
+        <p>A significant majority of the women in STEM roles working at the federal level were White (66.02%). Comparatively, 14.58% were African American or Black, 9.76% Asian, 6.42% Hispanic or Latina, 
+            0.97% Native American/Alaskan Native and 0.28 % Hawaiian or Pacific Islander heritage, respectively.</p>
+        <p>Research shows that women are 1.6 times more likely to be laid off than men, stemming from their persistent lack of seniority compared with male colleagues in the sector. </p>
+        <p>The tech layoffs in 2022 have been devastating, with the research by the WomenTech Network showing that 69.2% of those laid off were women. This figure is deeply concerning and shows the 
+            disproportionate impact of layoffs on women in tech.</p>
+        <p>The data gathered demonstrates the urgent need to take action to ensure that more equitable opportunities are available for women in tech. We must work together to create more inclusive workplaces, 
+            where women can have equal access to job opportunities and resources. In addition, initiatives such as mentorship programs, scholarships and other support systems must be put in place to help women 
+            build successful careers in tech.</p>
+        <p>We must also strive towards creating an environment of tolerance and acceptance, one that celebrates diversity and encourages open dialogue within all levels of our organizations. By working towards 
+            these goals, we can ensure that everyone has an equal chance at success in the tech industry.WomenTech network analyzed a sample of 4912 profiles from 54 tech companies.</p>
+        <img src="assets/techlayoffs.png" alt="Tech Layoffs by Gender">
+    </div>
+    <div style="text-align: center;">
+        <h2>Women in Tech Employment Gaps</h2>
+        <p>U.S. Census data demonstrates that female workers have made enormous strides in the STEM workforce, growing from an 8% minority in 1970 to 28% of all STEM employees by 2019. Despite the progress made 
+            in 2020, there is still a considerable gender gap in the GAFAM (Google, Apple, Facebook, Amazon and Microsoft) workforce with women making up between 28% and 42%. On average only 31% of the GAFAM 
+            employees are female.</p>
+        <p>As workers progress up the corporate ladder, gender discrepancies in employment become more and more pronounced.
+            Female representation in tech job applicant pools is highest for junior jobs. It drops for mid-level jobs and then drops again for senior-level jobs. </p>
+        <p>While software engineering jobs often have 25% fewer female applicants in their applicant pools between junior and mid-level (4 to 10 years of experience), ERP, UI/UX design, and cross-functional 
+            roles exhibit an even greater gender disparity with a drop at the senior level.</p>
+        <img src="assets/GAFAM.png" alt="Women Working at GAFAM">
+    </div>
+    <div style="text-align: center;">
+        <h2>Women in Tech Retention Gaps</h2>
+        <p>Although the number of women earning STEM degrees has increased, the retention rate for female professionals in this field is unfortunately low. NCSES research found that only 38% of women majoring 
+            in computer science were employed to work within the sector compared to 53% men, and 24% with an engineering degree continuing their career path versus 30 % males.</p>
+        <img src="assets/employedincs.png" alt="Women employed in Computer Science">
+    </div>
+    <div style="text-align: center;">
+        <h2>Workplace Culture Issues</h2>
+        <p>Women executives prioritize flexibility when contemplating joining or remaining with a company, with 48% citing it as one of the top three considerations in a WomenTech Network survey. Men leaders are 
+            slightly less likely to include this factor in their decision-making process, at 34%. Women executives are 1.5 times more likely than their male counterparts to have changed jobs because they desired a 
+            workplace that was dedicated to DE&I.</p>
+        <p>While remote and hybrid work may provide a temporary reprieve from bias, it is far from an adequate substitute for real systemic transformation. On the one hand, women are witnessing fewer microaggressions 
+            in virtual spaces; however, this should not be a cause to celebrate. Leaning on remote or hybrid models as a sole solution simply won't suffice.</p>
+        <p>WomenTech Network survey further reveals that women often experience microaggressions at work. About 64% of respondents have been spoken over during meetings, 19% have felt pigeonholed by stereotypes in various 
+            situations, and 11% have been asked to “supply the food” during meetings. Amongst other frequent microaggressions, gendered language and taking meeting minutes were referred to as “the usual” from many of the survey participants. </p>
+        <img src="assets/microaggressions.png" alt="Microaggressions for women in tech">
+    </div>
+    <div style="text-align: center;">
+        <h2>Lack of Representation</h2>
+        <p>Despite incremental steps forward in the past decade, women—particularly those of color—are significantly underrepresented in corporate America. The situation is especially dire in senior leadership; only 25% of C-suite leaders 
+            are women, and a mere 5% represent racial minority females. Undeniably, the "broken rung" continues to be an issue for many businesses, one that makes achieving gender parity within their organizations virtually impossible.</p>
+        <img src="assets/c-suite.png" alt="25% Women in C-Suite">
+    </div>
+    <div style="text-align: center;">
+        <h2>Pay Gaps for Women in Tech</h2>
+        <p>It is undeniably true that men in STEM professions experience higher annual salaries than women - a difference of nearly $15,000 every year ($85,000 for males versus just $60,828 for females). This disparity is even more pronounced 
+            among Latina and Black women who are typically earning only around $52,000 per annum. </p>
+        <p>A study in the US showed that there was a gender wage gap of 1.6%. It also demonstrated that while women were paid less than men when working remotely, they seemed pleased to settle for $0.95 for every dollar their male colleagues requested as wages.</p>
+        <p>It also found that racial prejudice is a significant factor in the wage gap between female workers of color and white men, with Hispanic women and African-Americans expecting to make only $0.91 for every dollar their counterparts receive.</p>
+        <p>A study from 2021 foresees that it will take an astonishing 268 years to eradicate the financial gender gap, as reported by the World Economic Forum.</p>
+    </div>
+    <div class="text-box" style="justify-content: center; align-items: center; display: flex;">
+        <img src="assets/Visualization.png" alt="Gap Gaps for Women in Tech" width="1000" height="500">
+    </div>
+    <div style="text-align: center;">
+        <h2>Leadership Position Gaps for Women in Tech</h2>
+        <p>Women face a major roadblock when it comes to attaining senior leadership—their first step up from entry-level. The numbers are shocking; for every 100 men promoted to manager, only 87 women and 82 women of color get the same promotion. This leaves far fewer female candidates available for higher-level positions down the line, making it nearly impossible for them to ever catch up in terms of representation within these roles.
+            Two-thirds of young women desire to further their careers if they see successful professionals with the desired work-life balance. This would help them recognize and strive for achievable goals, enabling them to move up the corporate ladder.</p>
+    </div>
+    <div id="chart2" class="text-box" style="justify-content: center; align-items: center; display: flex;"></div>
+    <div style="text-align: center;">
+        <h2>Venture Capital Funding for Women-led Startups</h2>
+        <p>Women-led startups are having a daunting time obtaining venture capital funding, with only 2.3% of investment in 2020 going towards them. It's been proposed that female founders will experience more success if they approach investors who are also women - and it appears to be true since research shows that female VCs are twice as likely than male counterparts when providing money for businesses owned by women.
+            Recent studies, however, suggest that even though female-led startups may be more likely to secure funding from women investors, these investments also bring with them the idea of preferential treatment due to gender. This then leads to further complications for female founders when seeking additional investment down the line. In other words, obtaining early funds from a woman investor could potentially make 
+            it harder in the long run for an entrepreneur to receive financing elsewhere.</p>
+        <img src="assets/startups.png" alt="2.3% of women-led startups get funding">
+    </div>
+    <div style="text-align: center;">
+        <h2>How to Create a Future for Women in Technology</h2>
+        <p>Through an in-depth assessment of the latest HR and DEI standards, we have identified three distinct groups of measures to promote and maintain women's progress:</p>
+        <p>Over three-fourths of companies have already adopted table stakes, which are necessary but not sufficient to make tangible progress.
+            Companies with a greater representation of female and minority women are more likely to adopt best practices than those that settle for baseline standards.
+            Despite only being implemented by a fraction of companies, emerging practices have demonstrated remarkable results.</p>
+        <p>To expedite the progression towards gender equality in our society, it is imperative that organizations examine and embrace more emerging and leading strategies and establish new standards within their own operations.</p>
+        <img src="assets/surroundyourself.png" alt="Surround yourself with women who would mention your name in a room full of opportunities">
+    </div>
+    <div style="text-align: center;">
+        <h2>Frequently Asked Questions</h2>
+        <h3>What percentage of women are in tech?</h3>
+        <p>Currently, women make up about 28% of the tech workforce. This is a significant improvement from the early 2000s when women only made up 9%. </p>
+        <h3>How many women work in tech in the US?</h3>
+        <p>In the US, there are about 3.7 million women working in tech positions (which represents only 23% of the labor force). </p>
+        <h3>How many women work in tech in Europe?</h3>
+        <p> In Europe, there are approximately 1.7 million women working in tech positions (representing about 19.1% of the ICT labor force). </p>
+    </div>
+    <script>
+        const margin2 = { top: 100, right: 100, bottom: 100, left: 150 };
+        const width2 = 800 - margin2.left - margin2.right;
+        const height2 = 600 - margin2.top - margin2.bottom;
+
+        const svg2 = d3.select("#chart2")
+            .append("svg")
+            .attr("width", width2 + margin2.left + margin2.right)
+            .attr("height", height2 + margin2.top + margin2.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin2.left}, ${margin2.top})`);
+
+        const tooltip2 = d3.select("#chart2")
+            .append("div")
+            .style("position", "absolute")
+            .style("visibility", "hidden")
+            .style("background-color", "#D0A6FF")
+            .style("font-size", "20");
+
+        d3.csv("Employee Diversity in Tech4.csv", function (d) {
+            return {
+                company: d["Company"],
+                female: +d['Female'],
+                male: +d['Male'],
+                date: d["Date"],
+                type: d["Type"]
+            };
+        }).then(function (data) {
+            const companies = ["Fortune 500 CEOs", "US Congress"];
+            const keys = ["female", "male"];
+            const colors = { female: "hotpink", male: "#7088FF" };
+
+            const filteredData = data.filter(d => d.date === "May 2018" && companies.includes(d.company));
+
+            const stackedData = d3.stack()
+                .keys(keys)
+                .value((d, key) => d[key])
+                (filteredData);
+
+            const y = d3.scaleBand()
+                .domain(filteredData.map(d => d.company))
+                .range([0, height2])
+                .padding(0.1);
+
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(stackedData[stackedData.length - 1], d => d[1])])
+                .nice()
+                .range([0, width2]);
+
+            svg2
+                .selectAll("g")
+                .data(stackedData)
+                .enter()
+                .append("g")
+                .attr("fill", d => colors[d.key])
+                .selectAll("rect")
+                .data(d => d)
+                .enter()
+                .append("rect")
+                .attr("y", d => y(d.data.company))
+                .attr("x", d => x(d[0]))
+                .attr("width", d => x(d[1]) - x(d[0]))
+                .attr("height", y.bandwidth())
+                .on("mouseover", function (e, d) {
+                    color = d3.select(this.parentNode).attr("fill");
+                    const genderLabel = color == "hotpink" ? "Female" : "Male";
+                    let label;
+
+                    if (genderLabel == "Female") {
+                        label = d.data.female
+                    } else {
+                        label = d.data.male
+                    }
+                    tooltip2
+                        .style("visibility", "visible")
+                        .style("font-size", "60px")
+                        .html(label + "% " + genderLabel);
+                })
+                .on("mousemove", function () {
+                    tooltip2
+                    .style("top", y + "px")
+                    .style("left", x + "px");
+                })
+                .on("mouseout", function () {
+                    tooltip2.style("visibility", "hidden");
+                });
+
+            const xAxis = d3.axisBottom(x).tickSizeOuter(0);
+            const yAxis = d3.axisLeft(y);
+
+            svg2.append("g")
+                .attr("class", "y-axis")
+                .call(yAxis);
+
+            svg2.append("text")
+                .attr("x", width2 / 2)
+                .attr("y", -margin2.top / 2)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .text("Gender Diversity in Leadership (May 2018)");
+            
+            
+            
+            svg2.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0, ${height2})`)
+                .call(xAxis);
+
+            
+            svg2.append("text")
+                .attr("x", width2 / 2)
+                .attr("y", height2 + margin2.bottom - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .text("Percent");
+        });
+
+    </script>
+        
+</body>
+</html>

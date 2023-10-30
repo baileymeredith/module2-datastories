@@ -1,0 +1,10 @@
+body {
+    background-color: white ;
+}
+
+.text-box {
+    background-color: #F7D6FF ;
+    color: black;
+    padding: 20px;
+    border-radius: 5px;
+}
